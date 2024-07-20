@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "all"
+
+import numpy as np
+import pandas as pd
+import time
+ 
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import math
+from itertools import product, combinations, chain
+
+import function_documents
+
+
+data_train = np.array([[-1,-1,-1],[-1,1,-1],[1,-1,-1],[1,1,1]])
+data_dec = function_documents.polar_decimal(data_train) 
+KL_div = lambda p,q :np.where(p != 0, p * np.log2(p / q), 0)
+ideal_prob = np.array([1/len(data_dec)]*len(data_dec))
+
+pbit = 3 ###int(input('Enter the no. of pbit'))
+data_train
+alpha = 0.02
+lambda_R = 0.0001
+alpha
+lambda_R
+n_runs = 0 
+start_time = time.time()
+
+[J,h, var_combinations, no_pbit]= function_documents.sampler(pbit)  ## 
+
+var_h= [i for i in list(range(pbit))]   
+total_connections = len(var_combinations) + len(var_h)
+KL_div_prob =[]
+KL= math.inf
+while (KL> 0.2) and (n_runs <2500): 
+    n_runs +=1
+    print("\nKL is %s and loop is %s" %(KL, n_runs))
+   
+    PSL_data = np.array(function_documents.fast_PSL(J,h,pbit=no_pbit, n_samples = 10000,t0 = no_pbit) )
+
+    PSL_prob = function_documents.PSL_prob(PSL_data)
+    prob_data_dec = []
+    for i in data_dec:
+        prob_data_dec.append(PSL_prob[0][i])
+    KL = sum(KL_div(ideal_prob , prob_data_dec))
+    KL_div_prob.append(KL)
+    
+    for i, j in var_combinations:
+        ##### positive phase
+        positive_phase = (data_train[:, i] * data_train[:, j]).mean()
+        #### negative phase
+        negative_phase = (PSL_data[:, i] * PSL_data[:, j]).mean()
+        #### update weights
+        J[i, j] += alpha * (positive_phase - negative_phase) - lambda_R*J[i, j] 
+        J[j,i] = J[i,j]
+    
+    for i in list(var_h): 
+        positive_phase = data_train[:, i].mean()
+        negative_phase = PSL_data[:, i].mean()
+        h[i] += alpha * (positive_phase - negative_phase)
+
+print("--- %s seconds ---" % (time.time() - start_time))
+
+plt.plot(range(len(KL_div_prob)), KL_div_prob)
+plt.xlabel("No.of iterations")
+plt.ylabel("KL divergence")
+plt.show()
+
+# ## TESTING
+
+h_calc = h.copy()
+J_calc = J.copy()
+
+no_pbit = 3 #int(input('Enter the number of pbits: '))
+## all possible states of with given pbits
+no_pbit =len(h_calc)
+m = list(product([-1, 1], repeat=no_pbit))
+possible_comb = 2**no_pbit
+PSL_prob = function_documents.PSL_prob(PSL_data)
+function_documents.PSL_plot(PSL_data)
