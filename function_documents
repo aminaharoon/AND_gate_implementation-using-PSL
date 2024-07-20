@@ -1,0 +1,107 @@
+import numpy as np
+import pandas as pd
+import math
+import random
+from collections import defaultdict, Counter
+from functools import reduce
+from itertools import product, combinations, chain
+import time
+from time import time
+import itertools 
+from itertools import permutations  
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import xlsxwriter
+import xlrd
+
+####################################################################
+
+def polar_decimal(polar_data):
+    data_dec=[]
+    data_polar = polar_data.copy()
+    data_dec = []
+    data_polar[np.isclose(data_polar,-1)] = 0
+    af  = data_polar.astype(int)
+    for item in af:
+        ax = ''.join(map(str,item))
+        dec= int(ax, 2)
+        data_dec.append(dec)
+    return data_dec
+################################################################
+##################################################################
+
+def sampler(pbit):
+
+    # ###initialize parameters 
+    h = np.zeros((pbit,))
+    J = np.zeros((pbit,pbit))
+    
+    # a few other pieces we'll need
+    var_combinations = list(combinations(range(pbit), 2))
+    return J,h, var_combinations,pbit
+#######################################################################
+#########################################################
+
+def fast_PSL(J,h, pbit, n_samples,t0):
+    
+    I = np.zeros(pbit,)
+    m= np.zeros(pbit,)
+    r = np.zeros(pbit,)
+    sm = np.zeros(pbit,)    
+    M_time = []
+    I0=1.0
+    h_fix = np.zeros(pbit,)
+    M_time = []
+    for t in range(n_samples):
+        if t<t0:
+            for x in reversed(range(pbit)):
+                a= np.random.uniform(0,1)
+                if (a==0):
+                    a=np.random.uniform(0,1)
+                m[x] = np.sign(-1 + (2)*a)
+            M_time.append(list(m)) 
+        else:
+            seq = np.random.permutation(pbit)
+            for x in seq:
+                a= np.random.uniform(0,1)
+                if (a==0):
+                    a=np.random.uniform(0,1)
+                m[x] = np.sign( (-1 + (2)*a) + np.tanh(I0*(np.dot(J[x], m) + h[x] +h_fix[x] ) ) )
+            M_time.append(list(m))
+    return M_time[t0:]
+##############################################################################
+################################################################
+
+def PSL_prob(PSL_data):
+    p = np.shape(PSL_data)[1]
+    data_M = PSL_data.copy()
+    data_dec = polar_decimal(data_M)
+    let_counts = defaultdict(int)
+    for item in data_dec:
+        let_counts[item] += 1 
+    d=let_counts
+    factor=1.0/sum(d.values())
+    for k in d:
+        d[k] = d[k]*factor
+
+    return  d , sum(d.values())
+##############################################################################
+############################################################
+
+def PSL_plot(PSL_data):
+    p = np.shape(PSL_data)[1]
+    data_M = PSL_data.copy()
+    data_dec = polar_decimal(data_M)
+    let_counts = defaultdict(int)
+    for item in data_dec:
+        let_counts[item] += 1 
+    d=let_counts
+    factor=1.0/sum(d.values())
+    for k in d:
+        d[k] = d[k]*factor
+    plt.figure()
+    plt.bar(d.keys(), d.values())
+
+    return 
+#########################################################
+##############################################################################
