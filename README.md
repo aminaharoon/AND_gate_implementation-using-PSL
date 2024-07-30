@@ -1,1 +1,1 @@
-# AND_gate_implementation-using-PSL
+# Two input AND gate implementation using p-bits
